@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using BepInEx;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +9,10 @@ using UnityEngine.Timeline;
 using GorillaNetworking;
 using System.Collections.Specialized;
 using System.Net;
+using HarmonyLib;
+using HoneyLib;
+using HoneyLib.Events;
+using System.Timers;
 
 namespace GorillaServerStats
 {
@@ -23,9 +27,12 @@ namespace GorillaServerStats
     public class Plugin : BaseUnityPlugin
     {
         bool inRoom;
+        private Timer timer;
         public GameObject forestSign;
         public Text signText;
         public bool init;
+        public int roomTags = 0;
+
 
         void Awake()
         {
@@ -35,6 +42,8 @@ namespace GorillaServerStats
         void Start()
         {
             Utilla.Events.GameInitialized += OnGameInitialized;
+            HoneyLib.Events.Events.InfectionTagEvent += InfectionTagEvent;
+
         }
 
         void OnGameInitialized(object sender, EventArgs e)
@@ -56,7 +65,7 @@ namespace GorillaServerStats
                 if (forestSign != null)
                 {
                     signText = forestSign.GetComponent<Text>();
-                    signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount;
+                    signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount + "\r\nMY TAGS: " + roomTags;
                 }
                 else
                 {
@@ -91,7 +100,7 @@ namespace GorillaServerStats
             if (forestSign != null)
             {
                 signText = forestSign.GetComponent<Text>();
-                signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount;
+                signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount + "\r\nMY TAGS: " + roomTags;
             }
             else
             {
@@ -111,7 +120,7 @@ namespace GorillaServerStats
             if (forestSign != null)
             {
                 signText = forestSign.GetComponent<Text>();
-                signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount;
+                signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + "\r\nMY TAGS: " + roomTags;
             }
             else
             {
@@ -122,10 +131,20 @@ namespace GorillaServerStats
         public void OnLeave(string gamemode)
         {
             inRoom = false;
+            roomTags = 0;
 
             // Change the text on the sign
             signText = forestSign.GetComponent<Text>();
             signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nPLEASE JOIN A ROOM FOR STATS TO APPEAR!";
         }
-    }
+
+        void InfectionTagEvent(object sender, InfectionTagEventArgs e)
+        {
+            if (inRoom)
+            {
+                roomTags++;
+                Update();
+            }
+        }
+    }   
 }
