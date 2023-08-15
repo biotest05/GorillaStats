@@ -6,8 +6,11 @@ using Utilla;
 using Bepinject;
 using Photon.Pun;
 using UnityEngine.Timeline;
+using GorillaNetworking;
+using System.Collections.Specialized;
+using System.Net;
 
-namespace GoPlayGtag
+namespace GorillaServerStats
 {
     /// <summary>
     /// This is your mod's main class.
@@ -16,7 +19,7 @@ namespace GoPlayGtag
     /* This attribute tells Utilla to look for [ModdedGameJoin] and [ModdedGameLeave] */
     [ModdedGamemode]
     [BepInDependency("org.legoandmars.gorillatag.utilla", "1.5.0")]
-    [BepInPlugin("com.thaterror404.gorillatag.SererStats", "ServerStats", "1.0.1")]
+    [BepInPlugin("com.thaterror404.gorillatag.SererStats", "ServerStats", "1.0.2")]
     public class Plugin : BaseUnityPlugin
     {
         bool inRoom;
@@ -26,7 +29,7 @@ namespace GoPlayGtag
 
         void Awake()
         {
-            // will totally not add ci support here :p
+
         }
 
         void Start()
@@ -44,15 +47,16 @@ namespace GoPlayGtag
         {
             if (init)
             {
-                int playerCount = PhotonNetwork.CountOfPlayersInRooms;
+                int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
                 var master = PhotonNetwork.MasterClient;
                 var lobbyCode = PhotonNetwork.CurrentRoom.Name;
+                int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
 
                 // Change the text on the sign
                 if (forestSign != null)
                 {
                     signText = forestSign.GetComponent<Text>();
-                    signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nLOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName;
+                    signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount;
                 }
                 else
                 {
@@ -78,15 +82,16 @@ namespace GoPlayGtag
         }
         void Update()
         {
-            int playerCount = PhotonNetwork.CountOfPlayersInRooms;
+            int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
             var master = PhotonNetwork.MasterClient;
             var lobbyCode = PhotonNetwork.CurrentRoom.Name;
+            int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
 
             // Change the text on the sign
             if (forestSign != null)
             {
                 signText = forestSign.GetComponent<Text>();
-                signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nLOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName;
+                signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount;
             }
             else
             {
@@ -97,15 +102,16 @@ namespace GoPlayGtag
         {
             inRoom = true;
 
-            int playerCount = PhotonNetwork.CountOfPlayersInRooms;
+            int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
             var master = PhotonNetwork.MasterClient;
             var lobbyCode = PhotonNetwork.CurrentRoom.Name;
+            int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
 
             // Change the text on the sign
             if (forestSign != null)
             {
                 signText = forestSign.GetComponent<Text>();
-                signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nLOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName;
+                signText.text = "LOBBY CODE: " + lobbyCode + "\r\nPLAYERS: " + playerCount + "\r\nMASTER: " + master.NickName + "\r\nTOTAL PLAYERS: " + totalPlayerCount;
             }
             else
             {

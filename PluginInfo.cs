@@ -5,8 +5,8 @@
 	/// </summary>
 	class PluginInfo
 	{
-		public const string GUID = "com.bjrsinge.gorillatag.GoPlayGtag";
-		public const string Name = "GoPlayGtag";
-		public const string Version = "1.0.1";
+		public const string GUID = "com.thaterror404.gorillatag.GorillaServerStats";
+		public const string Name = "GorillaServerStats";
+		public const string Version = "1.0.2";
 	}
 }
