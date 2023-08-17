@@ -1,30 +1,37 @@
-﻿using System;
+using System;
 using BepInEx;
 using UnityEngine;
 using UnityEngine.UI;
 using Utilla;
 using Bepinject;
 using Photon.Pun;
+using ExitGames.Client.Photon;
+using Photon.Realtime;
 using UnityEngine.Timeline;
 using GorillaNetworking;
 using System.Collections.Specialized;
 using System.Net;
 using HarmonyLib;
 using System.Collections;
+using System.Runtime.InteropServices;
 
 namespace GorillaServerStats
 {
     [ModdedGamemode]
     [BepInDependency("org.legoandmars.gorillatag.utilla", "1.5.0")]
-    [BepInPlugin("com.thaterror404.gorillatag.SererStats", "ServerStats", "1.0.2")]
+    [BepInPlugin("com.thaterror404.gorillatag.SererStats", "ServerStats", "1.0.5")]
+
     public class Plugin : BaseUnityPlugin
     {
         public static Plugin Instance; // Singleton instance
 
         bool inRoom;
         public GameObject forestSign;
+        public GameObject nextKey;
         public Text signText;
         public bool init;
+        public int tags = 0;
+        public int Tagged;
 
         Coroutine timerCoroutine;
         System.TimeSpan time = System.TimeSpan.FromSeconds(0);
@@ -61,26 +68,63 @@ namespace GorillaServerStats
             {
                 Debug.LogError("[ServerStats] Current room is null");
                 return "Hello! Thank you for using ServerStats!\r\n\r\nPlease join a room for stats to appear!";
-            }
-            
-            var lobbyCode = PhotonNetwork.CurrentRoom.Name;
-            int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
-            var master = PhotonNetwork.MasterClient;
-            int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
+            } else { 
+                var lobbyCode = PhotonNetwork.CurrentRoom.Name;
+                int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
+                var master = PhotonNetwork.MasterClient;
+                int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
+                var totalLobbies = "";
 
-            return "LOBBY CODE: " + lobbyCode + 
-                "\r\nPLAYERS: " + playerCount + 
-                "\r\nMASTER: " + master.NickName + 
-                "\r\nTOTAL PLAYERS: " + totalPlayerCount +
-                "\r\n\r\nPLAY TIME: " + playTime;
+                if (!System.IO.File.Exists("./config.json"))
+                {
+                    Debug.LogError("[ServerStats] config.json not found! Creating...");
+                    System.IO.File.WriteAllText("./config.json", "{\"totalLobbies\":\"0\"}");
+                    return "Hello! Thank you for using ServerStats!\r\n\r\nPlease join a room for stats to appear!";
+                }
+
+                string config = System.IO.File.ReadAllText("./config.json");
+                NameValueCollection configCollection = System.Web.HttpUtility.ParseQueryString(config);
+                totalLobbies = configCollection["totalLobbies"];
+
+                if (nextKey != null)
+                {
+                    // Duplicate the nextKey GameObject and change it's position the center of the board
+                    GameObject newKey = Instantiate(nextKey, new Vector3(0, 0, 0), Quaternion.identity);
+                    newKey.transform.SetParent(nextKey.transform.parent, false);
+                    newKey.transform.localPosition = new Vector3(0, 0, 0);
+                    newKey.transform.localScale = new Vector3(1, 1, 1);
+                    newKey.transform.localRotation = Quaternion.identity;
+                    newKey.name = "SSNextKey";
+                    Text keyText = newKey.GetComponent<Text>();
+                    keyText.text = ">";
+                }
+                else
+                {
+                    Debug.LogError("[ServerStats] nextKey not found!");
+                }
+
+                return "LOBBY CODE: " + lobbyCode + 
+                    "\r\nPLAYERS: " + playerCount + 
+                    "\r\nMASTER: " + master.NickName + 
+                    "\r\nTOTAL PLAYERS: " + totalPlayerCount +
+                    "\r\nPLAY TIME: " + playTime +
+                    "\r\nPING: " + PhotonNetwork.GetPing() +
+                    "\r\nREGION: " + PhotonNetwork.CloudRegion;
+                    // "\r\nTOTAL JOINED LOBBYS: " + totalLobbies;
+            }
 
         }
-
         void OnGameInitialized(object sender, EventArgs e)
         {
             Debug.Log("[ServerStats] Game Initialized.");
             init = true;
             forestSign = GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenForest");
+            nextKey = GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/-- PhysicalComputer UI --/keyboard/Buttons/Keys/1");
+            if (nextKey == null)
+            {
+                Debug.LogError("[ServerStats] Could not find nextKey");
+                return;
+            }
             if (forestSign == null)
             {
                 Debug.LogError("[ServerStats] Could not find ForestSign");
@@ -166,8 +210,6 @@ namespace GorillaServerStats
             {
                 StopCoroutine(timerCoroutine);
             }
-            time = System.TimeSpan.FromSeconds(0); // Reset the time
-            timerCoroutine = StartCoroutine(Timer());
 
             if (forestSign != null)
             {
@@ -178,20 +220,25 @@ namespace GorillaServerStats
             {
                 Debug.Log("[ServerStats] forestSign doesn't exist in OnJoin");
             }
+
+            if (!System.IO.File.Exists("./config.json"))
+            {
+                Debug.LogError("[ServerStats] config.json not found! Creating...");
+                System.IO.File.WriteAllText("./config.json", "{\"totalLobbies\":\"0\"}");
+            }
+
+            string config = System.IO.File.ReadAllText("./config.json");
+            NameValueCollection configCollection = System.Web.HttpUtility.ParseQueryString(config);
+            int totalLobbies = Int32.Parse(configCollection["totalLobbies"]);
+            totalLobbies++;
+            configCollection["totalLobbies"] = totalLobbies.ToString();
+            System.IO.File.WriteAllText("./config.json", configCollection.ToString());
         }
 
         public void OnLeave(string gamemode)
         {
             Debug.Log("[ServerStats] Left a room.");
             inRoom = false;
-
-            // Stop the timer coroutine
-            if (timerCoroutine != null)
-            {
-                StopCoroutine(timerCoroutine);
-                time = System.TimeSpan.FromSeconds(0);
-                playTime = "00:00:00";
-            }
 
             if (forestSign != null)
             {
