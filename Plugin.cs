@@ -1,6 +1,7 @@
 ﻿using System;
 using BepInEx;
 using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.UI;
 using Utilla;
 using Bepinject;
@@ -11,6 +12,7 @@ using System.Collections.Specialized;
 using System.Net;
 using HarmonyLib;
 using System.Collections;
+using Zenject;
 
 namespace GorillaServerStats
 {
@@ -22,9 +24,10 @@ namespace GorillaServerStats
         public static Plugin Instance; // Singleton instance
 
         bool inRoom;
-        public GameObject forestSign;
-        public Text signText;
+        public List<GameObject> signs;
+        public List<Text> signTexts;
         public bool init;
+        PhotonNetworkController networkController;
 
         Coroutine timerCoroutine;
         System.TimeSpan time = System.TimeSpan.FromSeconds(0);
@@ -53,6 +56,11 @@ namespace GorillaServerStats
         void Start()
         {
             Utilla.Events.GameInitialized += OnGameInitialized;
+            signs.Add(GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenForest"));
+            signs.Add(GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenCave"));
+            signs.Add(GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenCity Front"));
+            signs.Add(GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenCanyon"));
+            signs.Add(GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenSkyJungle"));
         }
 
         public string boardStatsUpdate()
@@ -62,7 +70,6 @@ namespace GorillaServerStats
                 Debug.LogError("[ServerStats] Current room is null");
                 return "Hello! Thank you for using ServerStats!\r\n\r\nPlease join a room for stats to appear!";
             }
-            
             var lobbyCode = PhotonNetwork.CurrentRoom.Name;
             int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
             var master = PhotonNetwork.MasterClient;
@@ -72,25 +79,67 @@ namespace GorillaServerStats
                 "\r\nPLAYERS: " + playerCount + 
                 "\r\nMASTER: " + master.NickName + 
                 "\r\nTOTAL PLAYERS: " + totalPlayerCount +
-                "\r\n\r\nPLAY TIME: " + playTime;
+                "\r\nPLAY TIME: " + playTime +
+                "\r\n\r\nMAP: " + getMap(networkController.currentGameType);
 
+        }
+
+        public string getMap(string map)
+        {
+            bool isMapDone = false;
+            if (map.Contains("forest") && !isMapDone)
+            {
+                return "FOREST";
+                isMapDone = true;
+            }
+            if (map.Contains("mountains") && !isMapDone)
+            {
+                return "MOUNTAINS";
+                isMapDone = true;
+            }
+            if (map.Contains("city") && !isMapDone)
+            {
+                return "CITY";
+                isMapDone = true;
+            }
+            if (map.Contains("canyons") && !isMapDone)
+            {
+                return "CANYONS";
+                isMapDone = true;
+            }
+            if (map.Contains("beach") && !isMapDone)
+            {
+                return "BEACH";
+                isMapDone = true;
+            }
+            if ((map.Contains("skyjungle") || map.Contains("clouds")) && !isMapDone)
+            {
+                return "CLOUDS";
+                isMapDone = true;
+            }
+            if (!isMapDone && inRoom)
+            { 
+                return "GLITCH/NO MAP";
+            }
+            return "";
         }
 
         void OnGameInitialized(object sender, EventArgs e)
         {
             Debug.Log("[ServerStats] Game Initialized.");
             init = true;
-            forestSign = GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenForest");
-            if (forestSign == null)
+            networkController = FindObjectOfType<PhotonNetworkController>();
+            foreach(GameObject sign in signs)
             {
-                Debug.LogError("[ServerStats] Could not find ForestSign");
-                return;
-            }
-            signText = forestSign.GetComponent<Text>();
-            if (signText == null)
-            {
-                Debug.LogError("[ServerStats] Could not find Text component for ForestSign");
-                return;
+                try 
+                { 
+                    signTexts.Add(sign.GetComponent<Text>());
+                } 
+                catch
+                {
+                    Debug.LogError("[ServerStats] Could not find Text component for sign");
+                    return;
+                }
             }
             if (PhotonNetwork.CurrentRoom == null)
             {
@@ -99,7 +148,15 @@ namespace GorillaServerStats
             }
             else
             {
-                signText.text = boardStatsUpdate();
+                foreach(Text signText in signTexts) {
+                    try
+                    {
+                        signText.text = boardStatsUpdate();
+                    } catch
+                    {
+                        Debug.LogError("[ServerStats] Cannot update board stats!");
+                    }
+                }
             }
         }
 
@@ -107,14 +164,15 @@ namespace GorillaServerStats
         {
             if (init)
             {
-                if (forestSign != null)
-                {
-                    signText = forestSign.GetComponent<Text>();
-                    signText.text = boardStatsUpdate();
-                }
-                else
-                {
-                    Debug.Log("[ServerStats] forestSign doesn't exist in OnJoin");
+                foreach(Text signText in signTexts) {
+                    try
+                    {
+                        signText.text = boardStatsUpdate();
+                    }
+                    catch
+                    {
+                        Debug.LogError("[ServerStats] Cannot update board stats!");
+                    }
                 }
             }
             else
@@ -127,14 +185,16 @@ namespace GorillaServerStats
         {
             if (init)
             {
-                if (forestSign != null)
-                {
-                    signText = forestSign.GetComponent<Text>();
-                    signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nPLEASE JOIN A ROOM FOR STATS TO APPEAR!";
-                }
-                else
-                {
-                    Debug.Log("[ServerStats] forestSign doesn't exist in OnDisable");
+                // "WELCOME TO GORILLA TAG!\r\n\r\nPLEASE JOIN A ROOM FOR STATS TO APPEAR!"
+                foreach (Text signText in signTexts) {
+                    try
+                    {
+                        signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nPLEASE JOIN A ROOM FOR STATS TO APPEAR!";
+                    }
+                    catch
+                    {
+                        Debug.LogError("[ServerStats] Cannot update board stats!");
+                    }
                 }
             }
             else
@@ -145,14 +205,15 @@ namespace GorillaServerStats
 
         void Update()
         {
-            if (forestSign != null)
-            {
-                signText = forestSign.GetComponent<Text>();
-                signText.text = boardStatsUpdate();
-            }
-            else
-            {
-                Debug.Log("[ServerStats] forestSign doesn't exist in Update");
+            foreach(Text signText in signTexts) {
+                try
+                {
+                    signText.text = boardStatsUpdate();
+                }
+                catch
+                {
+                    Debug.LogError("[ServerStats] Cannot update board stats!");
+                }
             }
         }
 
@@ -169,14 +230,15 @@ namespace GorillaServerStats
             time = System.TimeSpan.FromSeconds(0); // Reset the time
             timerCoroutine = StartCoroutine(Timer());
 
-            if (forestSign != null)
-            {
-                signText = forestSign.GetComponent<Text>();
-                signText.text = boardStatsUpdate();
-            }
-            else
-            {
-                Debug.Log("[ServerStats] forestSign doesn't exist in OnJoin");
+            foreach(Text signText in signTexts) {
+                try
+                {
+                    signText.text = boardStatsUpdate();
+                }
+                catch
+                {
+                    Debug.LogError("[ServerStats] Cannot update board stats!");
+                }
             }
         }
 
@@ -193,10 +255,15 @@ namespace GorillaServerStats
                 playTime = "00:00:00";
             }
 
-            if (forestSign != null)
-            {
-                signText = forestSign.GetComponent<Text>();
-                signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nPLEASE JOIN A ROOM FOR STATS TO APPEAR!";
+            foreach(Text signText in signTexts) {
+                try
+                {
+                    signText.text = "WELCOME TO GORILLA TAG!\r\n\r\nPLEASE JOIN A ROOM FOR STATS TO APPEAR!";
+                }
+                catch
+                {
+                    Debug.LogError("[ServerStats] Cannot update board stats!");
+                }
             }
         }
 
@@ -210,14 +277,15 @@ namespace GorillaServerStats
                 playTime = time.ToString(@"hh\:mm\:ss");
 
                 // Update signText directly here
-                if (forestSign != null)
-                {
-                    signText = forestSign.GetComponent<Text>();
-                    signText.text = boardStatsUpdate();
-                }
-                else
-                {
-                    Debug.LogWarning("[ServerStats] forestSign not found in Timer Coroutine.");
+                foreach(Text signText in signTexts) {
+                    try
+                    {
+                        signText.text = boardStatsUpdate();
+                    }
+                    catch
+                    {
+                        Debug.LogError("[ServerStats] Cannot update board stats!");
+                    }
                 }
 
                 Debug.Log("[ServerStats] Timer Coroutine Running. Current playTime: " + playTime);
