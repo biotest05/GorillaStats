@@ -119,7 +119,7 @@ namespace GorillaServerStats
             Debug.Log("[ServerStats] Game Initialized.");
             init = true;
             forestSign = GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenForest");
-            nextKey = GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/-- PhysicalComputer UI --/keyboard/Buttons/Keys/1");
+            nextKey = GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/-- PhysicalComputer UI --/keyboard/Buttons/Keys/");
             if (nextKey == null)
             {
                 Debug.LogError("[ServerStats] Could not find nextKey");
