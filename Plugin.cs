@@ -63,27 +63,6 @@ namespace GorillaServerStats
             signs.Add(GameObject.Find("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/Tree Room Texts/WallScreenSkyJungle"));
         }
 
-        public string boardStatsUpdate()
-        {
-            if (PhotonNetwork.CurrentRoom == null)
-            {
-                Debug.LogError("[ServerStats] Current room is null");
-                return "Hello! Thank you for using ServerStats!\r\n\r\nPlease join a room for stats to appear!";
-            }
-            var lobbyCode = PhotonNetwork.CurrentRoom.Name;
-            int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
-            var master = PhotonNetwork.MasterClient;
-            int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
-
-            return "LOBBY CODE: " + lobbyCode + 
-                "\r\nPLAYERS: " + playerCount + 
-                "\r\nMASTER: " + master.NickName + 
-                "\r\nTOTAL PLAYERS: " + totalPlayerCount +
-                "\r\nPLAY TIME: " + playTime +
-                "\r\n\r\nMAP: " + getMap(networkController.currentGameType);
-
-        }
-
         public string getMap(string map)
         {
             bool isMapDone = false;
@@ -122,6 +101,28 @@ namespace GorillaServerStats
                 return "GLITCH/NO MAP";
             }
             return "";
+        }
+
+        public string boardStatsUpdate()
+        {
+            if (PhotonNetwork.CurrentRoom == null)
+            {
+                Debug.LogError("[ServerStats] Current room is null");
+                return "Hello! Thank you for using ServerStats!\r\n\r\nPlease join a room for stats to appear!";
+            } else {
+                var lobbyCode = PhotonNetwork.CurrentRoom.Name;
+                int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
+                var master = PhotonNetwork.MasterClient;
+                int totalPlayerCount = PhotonNetwork.CountOfPlayersInRooms;
+    
+                return "LOBBY CODE: " + lobbyCode + 
+                    "\r\nPLAYERS: " + playerCount + 
+                    "\r\nMASTER: " + master.NickName + 
+                    "\r\nTOTAL PLAYERS: " + totalPlayerCount +
+                    "\r\nPLAY TIME: " + playTime +
+                    "\r\n\r\nMAP: " + getMap(networkController.currentGameType);
+            }
+
         }
 
         void OnGameInitialized(object sender, EventArgs e)
